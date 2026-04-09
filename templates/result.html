@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>附录D 符合程度差异对比报告</title>
+<style>
+:root {
+  --bg:#f5f6fa;--card:#fff;--pri:#4a6cf7;--pri-light:#e8edff;
+  --red-bg:#fee2e2;--red-border:#fca5a5;--red-text:#991b1b;--green-bg:#dcfce7;--green-border:#86efac;--green-text:#166534;
+  --orange-bg:#ffedd5;--orange-border:#fdba74;--orange-text:#9a3412;
+  --blue-bg:#dbeafe;--blue-border:#93c5fd;--blue-text:#1e40af;
+  --gray-bg:#f1f5f9;--gray-text:#475569;--border:#e2e8f0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:#1e293b;line-height:1.6;font-size:14px}
+
+/* Header */
+.topbar{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(102,126,234,.35)}
+.topbar h1{font-size:22px;font-weight:700}
+.topbar .meta{font-size:13px;opacity:.85}
+.topbar .actions{display:flex;gap:10px}
+.btn{padding:7px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:.2s}
+.btn-primary{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.btn-primary:hover{background:rgba(255,255,255,.35)}
+.btn-success{background:var(--green-text);color:#fff}.btn-success:hover{opacity:.85}
+.btn-danger{background:#dc2626;color:#fff}.btn-danger:hover{opacity:.85}
+
+/* Summary Cards */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;padding:24px 28px 12px}
+.scard{background:var(--card);border-radius:14px;padding:20px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--border)}
+.scard .num{font-size:32px;font-weight:800;line-height:1.2}
+.scard .label{font-size:12px;color:#64748b;margin-top:4px}
+.scard.total .num{color:#4a6cf7}
+.scard.changed .num{color:#dc2626}
+.scard.deleted .num{color:#ea580c}
+.scard.added .num{color:#16a34a}
+.scard.upgrade .num{color:#2563eb}
+.scard.downgrade .num{color:#dc2626}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:12px;padding:12px 28px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:68px;z-index:50;flex-wrap:wrap}
+.toolbar input[type=text]{padding:8px 14px;border:1px solid var(--border);border-radius:8px;width:260px;font-size:13px;outline:none}
+.toolbar input[type=text]:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-light)}
+.toolbar select{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer}
+.toolbar label{font-size:13px;color:#64748b;display:flex;align-items:center;gap:5px;cursor:pointer}
+.filter-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;transition:.15s}
+.filter-btn:hover{background:var(--pri-light);border-color:var(--pri);color:var(--pri)}
+.filter-btn.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+
+/* Main Content */
+.main{padding:0 28px 40px}
+
+/* Section Card */
+.section-card{background:var(--card);border-radius:14px;margin-bottom:16px;border:1px solid var(--border);overflow:hidden;transition:.2s}
+.section-card.hidden-by-filter{display:none}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;border-bottom:1px solid transparent;transition:.15s}
+.section-header:hover{background:rgba(74,108,247,.03)}
+.section-header.expanded{border-bottom-color:var(--border);background:linear-gradient(to right,var(--pri-light),transparent)}
+.section-title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+.section-id{background:var(--pri);color:#fff;padding:2px 10px;border-radius:6px;font-size:12px;font-weight:700}
+.section-badge{padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-red{background:var(--red-bg);color:var(--red-text)}.badge-green{background:var(--green-bg);color:var(--green-text)}
+.badge-orange{background:var(--orange-bg);color:var(--orange-text)}.badge-blue{background:var(--blue-bg);color:var(--blue-text)}
+.section-arrow{font-size:11px;color:#94a3b8;transition:.2s}
+.section-header.expanded .section-arrow{transform:rotate(90deg)}
+
+/* Object Card inside section */
+.obj-group{border-top:1px solid #f1f5f9}
+.obj-header{display:flex;align-items:center;gap:8px;padding:12px 20px 8px;font-weight:600;font-size:13.5px;color:#334155;cursor:pointer;user-select:none}
+.obj-header:hover{color:var(--pri)}
+.obj-icon{width:6px;height:6px;border-radius:50%;background:#cbd5e1;flex-shrink:0}
+.obj-header.expanded .obj-icon{background:var(--pri)}
+
+/* Compare Table */
+.compare-table{width:100%;border-collapse:collapse;margin:4px 0 16px;font-size:12.5px}
+.compare-table th{background:#f8fafc;color:#475569;font-weight:600;text-align:left;padding:9px 12px;border-bottom:2px solid var(--border);white-space:nowrap;font-size:12px}
+.compare-table td{padding:8px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top;max-width:300px;word-break:break-word;line-height:1.55}
+.compare-table tr:hover td{background:rgba(74,108,247,.02)}
+/* Column widths */
+.compare-table th.col-ctrl{width:90px}
+.compare-table th.col-indi{width:auto}
+.compare-table th.col-rec{min-width:200px}
+.compare-table th.col-cb{width:80px}
+.compare-table th.col-zg{width:80px}
+.compare-table th.col-diff{width:60px}
+
+/* Status badges in cells */
+.status{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:700;text-align:center;white-space:nowrap}
+.status-comply{background:var(--green-bg);color:var(--green-text);border:1px solid var(--green-border)}
+.status-partial{background:var(--orange-bg);color:var(--orange-text);border:1px solid var(--orange-border)}
+.status-not{background:var(--red-bg);color:var(--red-text);border:1px solid var(--red-border)}
+.status-na{background:var(--gray-bg);color:var(--gray-text);border:1px solid #d1d5db}
+.status-empty{color:#c0c0c0;font-style:italic}
+.row-downgrade td:nth-child(n+4){background:var(--red-bg)!important}
+.row-upgrade td:nth-child(n+4){background:var(--green-bg)!important}
+.row-to-na td:nth-child(n+4){background:var(--orange-bg)!important}
+.row-from-na td:nth-child(n+4){background:var(--blue-bg)!important}
+.row-deleted{opacity:.55}
+.row-deleted td:first-child::after{content:' [已删除]';color:#dc2626;font-size:11px;font-weight:700}
+.diff-tag{font-size:11px;font-weight:800;padding:1px 6px;border-radius:4px;vertical-align:middle;margin-left:4px}
+.tag-down{background:#fecaca;color:#991b1b}
+.tag-up{background:#bbf7d0;color:#166534}
+.tag-to-na{background:#fed7aa;color:#9a3412}
+.tag-from-na{background:#bfdbfe;color:#1e40af}
+
+/* Footer info */
+.footer-info{text-align:center;padding:30px;color:#94a3b8;font-size:12px;border-top:1px solid var(--border);margin-top:20px}
+
+/* No results */
+.no-results{grid-column:1/-1;text-align:center;padding:60px 20px;color:#94a3b8}
+.no-results .icon{font-size:48px;margin-bottom:12px}
+
+/* Loading overlay */
+#loadingOverlay{position:fixed;inset:0;background:rgba(255,255,255,.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.spinner{width:44px;height:44px;border:4px solid #e2e8f0;border-top-color:var(--pri);border-radius:50%;animation:spin .65s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Responsive */
+@media(max-width:768px){
+  body{font-size:13px}
+  .summary{grid-template-columns:repeat(2,1fr);padding:16px 12px}
+  .toolbar{padding:10px 12px}
+  .main{padding:0 12px 30px}
+  .topbar{padding:14px 16px}
+  .topbar h1{font-size:17px}
+  .compare-table{font-size:11.5px}
+  .compare-table td{max-width:180px;padding:6px 8px}
+}
+
+/* Print styles */
+@media print{
+  .topbar,.toolbar,.no-print{display:none!important}
+  .section-card{break-inside:avoid;break-after:page;page-break-inside:avoid}
+  body{background:#fff;font-size:11px}
+  .compare-table{font-size:10px}
+  .compare-table td{max-width:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loadingOverlay"><div class="spinner"></div><div style="margin-top:16px;color:#64748b">正在解析报告并生成对比结果...</div></div>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div>
+    <h1>📊 附录D 符合程度差异对比</h1>
+    <div class="meta" id="fileInfo"></div>
+  </div>
+  <div class="actions no-print">
+    <button class="btn btn-primary" onclick="expandAll()">展开全部</button>
+    <button class="btn btn-primary" onclick="collapseAll()">折叠全部</button>
+    <button class="btn btn-success" onclick="window.print()">🖨️ 打印/导出PDF</button>
+    <button class="btn btn-danger" onclick="location.href='/'">⬅️ 返回上传</button>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="summary" id="summaryArea"></div>
+
+<!-- Toolbar -->
+<div class="toolbar no-print">
+  <input type="text" id="searchInput" placeholder="🔍 搜索控制点、指标、测评对象..." oninput="doFilter()">
+  <select id="diffFilter" onchange="doFilter()">
+    <option value="">全部差异类型</option>
+    <option value="downgrade">⬇️ 降级（变差）</option>
+    <option value="upgrade">⬆️ 升级（变好）</option>
+    <option value="to_na">➡️ 变为不适用</option>
+    <option value="from_na">◀️ 从不适用变为具体评价</option>
+    <option value="deleted">🗑️ 仅初稿有（终稿删除）</option>
+    <option value="added">➕ 仅终稿有（新增）</option>
+  </select>
+  <select id="sectionFilter" onchange="doFilter()">
+    <option value="">全部章节</option>
+  </select>
+  <label><input type="checkbox" id="onlyDiff" onchange="doFilter()"> 仅显示有差异项</label>
+</div>
+
+<!-- Main Content -->
+<div class="main" id="resultArea"></div>
+
+<script>
+// ========== Data ==========
+const DATA = __DATA_PLACEHOLDER__;
+
+// ========== Init ==========
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('loadingOverlay').style.display = 'none';
+  renderSummary();
+  populateSectionFilter();
+  renderSections();
+});
+
+function renderSummary() {
+  const s = DATA.stats;
+  const area = document.getElementById('summaryArea');
+  area.innerHTML = `
+    <div class="scard total">
+      <div class="num">${s.total_items}</div>
+      <div class="label">总测评项</div>
+    </div>
+    <div class="scard changed">
+      <div class="num">${s.comply_changed}</div>
+      <div class="label">符合程度变化 ⚠️</div>
+    </div>
+    <div class="scard deleted">
+      <div class="num">${s.cb_only}</div>
+      <div class="label">仅初稿有（已删）</div>
+    </div>
+    <div class="scard added">
+      <div class="num">${s.zg_only}</div>
+      <div class="label">仅终稿有（新增）</div>
+    </div>
+    <div class="scard downgrade">
+      <div class="num">${s.downgrades}</div>
+      <div class="label">降级项 🔴</div>
+    </div>
+    <div class="scard upgrade">
+      <div class="num">${s.upgrades}</div>
+      <div class="label">升级项 🟢</div>
+    </div>`;
+  
+  document.getElementById('fileInfo').innerHTML =
+    `📄 ${esc(DATA.file_a.name)} &nbsp;vs&nbsp; 📄 ${esc(DATA.file_b.name)} &nbsp;|&nbsp; 生成于 ${new Date().toLocaleString()}`;
+}
+
+function populateSectionFilter() {
+  const sel = document.getElementById('sectionFilter');
+  DATA.sections.forEach(sec => {
+    const o = document.createElement('option');
+    o.value = sec.id; o.textContent = `${sec.id} ${sec.name}`;
+    sel.appendChild(o);
+  });
+}
+
+// ========== Render Sections ==========
+function renderSections() {
+  const area = document.getElementById('resultArea');
+  if (!DATA.sections || DATA.sections.length === 0) {
+    area.innerHTML = '<div class="no-results"><div class="icon">📭</div><p>未找到附录D内容或两份文档结构不一致<br>请确保上传的是密评报告的docx文件</p></div>';
+    return;
+  }
+  
+  let html = '';
+  for (const sec of DATA.sections) {
+    html += renderSection(sec);
+  }
+  area.innerHTML = html;
+
+  // Bind click handlers
+  document.querySelectorAll('.section-header').forEach(el => {
+    el.addEventListener('click', function() {
+      this.classList.toggle('expanded');
+      const body = this.nextElementSibling;
+      if (body && body.classList.contains('obj-body')) {
+        body.style.display = body.style.display === 'none' ? '' : 'none';
+      }
+    });
+  });
+  
+  // Default expand first 3 sections with changes
+  let expanded = 0;
+  document.querySelectorAll('.section-card').forEach(card => {
+    const hasChanges = card.querySelector('.badge-red') || card.querySelector('.badge-orange') || card.querySelector('.badge-green');
+    if (hasChanges && expanded < 3) {
+      const hdr = card.querySelector('.section-header');
+      if (hdr && !hdr.classList.contains('expanded')) {
+        hdr.click(); expanded++;
+      }
+    }
+  });
+}
+
+function renderSection(sec) {
+  const nDiff = countSecDiffs(sec);
+  const diffBadge = nDiff > 0 ?
+    `<span class="section-badge badge-red">${nDiff}处差异</span>` :
+    `<span class="section-badge" style="background:#f1f5f9;color:#94a3b8">无差异</span>`;
+  
+  let objsHtml = '<div class="obj-body" style="display:none">';
+  
+  if (!sec.objects || sec.objects.length === 0) {
+    objsHtml += '<div style="padding:16px;color:#94a3b8;font-size:13px">无数据</div>';
+  } else {
+    for (const obj of sec.objects) {
+      const objDiff = countObjDiffs(obj);
+      const diffMark = objDiff > 0 ?
+        `<span style="color:#dc2626;font-size:11px;font-weight:700;margin-left:6px">(${objDiff}处变化)</span>` : '';
+      
+      objsHtml += `
+        <div class="obj-group">
+          <div class="obj-header">
+            <span class="obj-icon"></span>
+            <span>${esc(obj.name)}${diffMark}</span>
+          </div>
+          ${renderCompareTable(obj.items, sec.id)}
+        </div>`;
+    }
+  }
+  objsHtml += '</div>';
+  
+  return `
+    <div class="section-card" data-section="${sec.id}" data-diff-count="${nDiff}">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-id">${esc(sec.id)}</span>
+          <span>${esc(sec.name)}</span>
+          ${diffBadge}
+          <span style="font-size:12px;color:#94a3b8;font-weight:400;margin-left:4px">${sec.cb_count||0}→${sec.zg_count||0} 项</span>
+        </div>
+        <span class="section-arrow">▶</span>
+      </div>
+      ${objsHtml}
+    </div>`;
+}
+
+function renderCompareTable(items, secId) {
+  if (!items || items.length === 0) return '';
+  let rows = '';
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const rowClass = it.diff_type ? ` row-${it.diff_type}` : '';
+    
+    const cbStatus = statusHtml(it.cb_comply);
+    const zgStatus = statusHtml(it.zg_comply);
+    
+    const diffTag = it.diff_type ? 
+      `<span class="diff-tag tag-${it.diff_type.includes('downgrade')?'down':it.diff_type.includes('upgrade')?'up':it.diff_type==='to_na'?'to-na':'from-na'}">${diffLabel(it.diff_type)}</span>` : '';
+    
+    rows += `<tr class="${rowClass}" data-type="${it.diff_type||''}" data-has-diff="${it.has_diff?'yes':'no'}">
+      <td class="col-ctrl">${esc(it.ctrl)}</td>
+      <td class="col-indi">${esc(it.indi)}</td>
+      <td class="col-rec">${esc(it.cb_rec)}</td>
+      <td class="col-cb">${cbStatus}${it.diff_type&&it.diff_type!=='deleted'?diffTag:''}</td>
+      <td class="col-zg">${zgStatus}</td>
+    </tr>`;
+  }
+  
+  return `
+    <table class="compare-table">
+      <thead><tr>
+        <th class="col-ctrl">控制点</th>
+        <th class="col-indi">指标/要求</th>
+        <th class="col-rec">初稿 记录/说明</th>
+        <th class="col-cb">初稿 符合程度</th>
+        <th class="col-zg">终稿 符合程度</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ========== Helpers ==========
+function esc(s) { if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function statusHtml(val) {
+  if (!val || val.trim() === '') return '<span class="status status-empty">—</span>';
+  v = val.trim();
+  if (v.includes('符合') && !v.includes('不符合') && !v.includes('部分')) return `<span class="status status-comply">${esc(v)}</span>`;
+  if (v.includes('部分')) return `<span class="status status-partial">${esc(v)}</span>`;
+  if (v.includes('不符')) return `<span class="status status-not">${esc(v)}</span>`;
+  if (v.includes('不适')) return `<span class="status status-na">${esc(v)}</span>`;
+  return `<span class="status">${esc(v)}</span>`;
+}
+
+function diffLabel(dt) {
+  const map = {'downgrade':'↓','upgrade':'↑','to_na':'→N/A','from-na':'←✓','deleted':'DEL','added':'NEW'};
+  return map[dt]||dt;
+}
+
+function classifyComplyChange(cb, zg) {
+  if (!zg || zg.trim()==='') return 'deleted';
+  if (!cb || cb.trim()==='') return 'added';
+  c=cb.trim().replace(/\s+/g,' ');z=zg.trim().replace(/\s+/g,' ');
+  if(c===z) return null;
+  order=['不符合','部分符合','符合','不适用'];
+  ci=order.findIndex(x=>c.includes(x));zi=order.findIndex(x=>z.includes(x));
+  if(z.includes('不适用')&&!c.includes('不适用')) return 'to_na';
+  if(c.includes('不适用')&&!z.includes('不适用')) return 'from_na';
+  if(ci>=0&&zi>=0&&zi<ci) return 'downgrade';
+  if(ci>=0&&zi>=0&&zi>ci) return 'upgrade';
+  if(zi<ci) return 'downgrade';
+  return 'upgrade';
+}
+
+function countSecDiffs(sec) {
+  if(!sec.objects)return 0;
+  return sec.objects.reduce((sum,o)=>sum+countObjDiffs(o),0);
+}
+function countObjDiffs(obj) {
+  if(!obj.items)return 0;
+  return obj.items.filter(it=>it.has_diff).length;
+}
+
+// ========== Filter / Search ==========
+function doFilter() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const ftype = document.getElementById('diffFilter').value;
+  const fsec = document.getElementById('sectionFilter').value;
+  const onlyD = document.getElementById('onlyDiff').checked;
+  
+  let visibleCount = 0;
+  let totalDiffCount = 0;
+  
+  document.querySelectorAll('.section-card').forEach(card => {
+    const secId = card.dataset.section;
+    let hasVisible = false;
+    let secHasMatch = false;
+    
+    // Check section-level match
+    const secMatch = !fsec || secId === fsec;
+    
+    // Check all rows
+    const rows = card.querySelectorAll('tbody tr');
+    let matchedRows = 0;
+    rows.forEach(row => {
+      let show = true;
+      const rtype = row.dataset.type;
+      const hasDiff = row.dataset.hasDiff === 'yes';
+      const text = row.textContent.toLowerCase();
+      
+      if(search && !text.includes(search)) show=false;
+      if(ftype && rtype !== ftype) show=false;
+      if(onlyD && !hasDiff) show=false;
+      
+      row.style.display = show ? '' : 'none';
+      if(show) { matchedRows++; hasVisible=true; }
+      if(hasDiff && show) secHasMatch=true;
+    });
+    
+    // Show/hide table headers
+    card.querySelectorAll('thead').forEach(th => {
+      th.style.display = matchedRows>0 ? '' : 'none';
+    });
+    
+    // Show/hide object groups
+    card.querySelectorAll('.obj-group').forEach(g => {
+      const gRows = g.querySelectorAll('tbody tr');
+      const anyVisible = Array.from(gRows).some(r=>r.style.display !=='none');
+      g.style.display = anyVisible ? '' : 'none';
+      if(anyVisible) hasVisible=true;
+    });
+    
+    card.style.display = (secMatch && hasVisible) ? '' : 'none';
+    if(card.style.display !== 'none') { visibleCount++; totalDiffCount+=secHasMatch?1:0; }
+  });
+  
+  // Update counts in view
+  updateFilterCounts(visibleCount);
+}
+
+function updateFilterCounts(visible) {
+  const sel = document.getElementById('diffFilter');
+  const cur = sel.value;
+  [...sel.options].forEach(o => {
+    if(!o.value) return;
+    const cnt = document.querySelectorAll(`tr[data-type="${o.value}"]`).length;
+    o.textContent = o.textContent.replace(/\(\d+\)/,'') + (cnt>0?` (${cnt})`:'');
+  });
+}
+
+// ========== Expand/Collapse ==========
+function expandAll() {
+  document.querySelectorAll('.section-header').forEach(el=>{
+    if(!el.classList.contains('expanded'))el.click()
+  });
+}
+function collapseAll() {
+  document.querySelectorAll('.section-header.expanded').forEach(el=>el.click());
+}
+</script>
+</body>
+</html>
