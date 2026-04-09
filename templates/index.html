@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>密评报告对比工具</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    color: #e0e0e0;
+  }
+  
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+  
+  /* 头部 */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .header h1 {
+    font-size: 2.2em;
+    background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .header p {
+    color: #8899aa;
+    font-size: 1em;
+  }
+  
+  /* 上传区域 */
+  .upload-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  
+  .file-card {
+    background: rgba(255,255,255,0.05);
+    border: 2px dashed rgba(255,255,255,0.15);
+    border-radius: 16px;
+    padding: 28px 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+  }
+  .file-card:hover {
+    border-color: #00d4ff;
+    background: rgba(0,212,255,0.05);
+  }
+  .file-card.has-file {
+    border-color: #00cc88;
+    border-style: solid;
+    background: rgba(0,204,136,0.08);
+  }
+  .file-card.dragover {
+    border-color: #7b2ff7;
+    background: rgba(123,47,247,0.1);
+    transform: scale(1.02);
+  }
+  
+  .file-card input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  
+  .card-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  .card-label {
+    font-size: 15px;
+    color: #aabbcc;
+    margin-bottom: 6px;
+  }
+  .card-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #00d4ff;
+    word-break: break-all;
+    max-height: 40px;
+    overflow: hidden;
+  }
+  
+  /* 名称输入 */
+  .name-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .name-inputs input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .name-inputs input:focus {
+    border-color: #00d4ff;
+  }
+  .name-inputs label {
+    font-size: 13px;
+    color: #8899aa;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .input-wrap { display: flex; flex-direction: column; }
+  
+  /* 按钮 */
+  .btn-row {
+    text-align: center;
+  }
+  .btn-compare {
+    background: linear-gradient(135deg, #00d4ff, #0099dd);
+    color: #000;
+    border: none;
+    border-radius: 30px;
+    padding: 16px 60px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 2px;
+  }
+  .btn-compare:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,212,255,0.35);
+  }
+  .btn-compare:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  
+  /* 加载状态 */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .loading-overlay.active { display: flex; }
+  
+  .spinner {
+    width: 56px;
+    height: 56px;
+    border: 4px solid rgba(255,255,255,0.1);
+    border-top-color: #00d4ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: #00d4ff; font-size: 18px; }
+  
+  /* 错误提示 */
+  .error-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ff3344;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    z-index: 1000;
+    display: none;
+    animation: slideDown 0.3s ease;
+  }
+  .error-toast.show { display: block; }
+  @keyframes slideDown { from{opacity:0;top:-20px} to{opacity:1;top:20px} }
+  
+  /* 底部信息 */
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    color: #556677;
+    font-size: 13px;
+  }
+  .footer span { color: #00d4ff; }
+
+  @media(max-width: 650px) {
+    .upload-area, .name-inputs {
+      grid-template-columns: 1fr;
+    }
+    .header h1 { font-size: 1.6em; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>📋 密评报告对比工具</h1>
+    <p>上传两份密评测评报告（.docx），自动对比附录D符合程度差异</p>
+  </div>
+
+  <!-- 文件上传 -->
+  <div class="upload-area">
+    <div class="file-card" id="cardA" onclick="document.getElementById('fileA').click()">
+      <span class="card-icon">📄</span>
+      <div class="card-label">文档 A（初版 / 原版）</div>
+      <div class="card-name" id="nameA">点击或拖拽上传 .docx 文件</div>
+      <input type="file" id="fileA" accept=".docx" onchange="onFileSelect(this,'A')">
+    </div>
+    
+    <div class="file-card" id="cardB" onclick="document.getElementById('fileB').click()">
+      <span class="card-icon">📄</span>
+      <div class="card-label">文档 B（终稿 / 新版）</div>
+      <div class="card-name" id="nameB">点击或拖拽上传 .docx 文件</div>
+      <input type="file" id="fileB" accept=".docx" onchange="onFileSelect(this,'B')">
+    </div>
+  </div>
+
+  <!-- 名称输入 -->
+  <div class="name-inputs">
+    <div class="input-wrap">
+      <label>文档 A 显示名称（可选）</label>
+      <input type="text" id="labelA" placeholder="例如：初版报告">
+    </div>
+    <div class="input-wrap">
+      <label>文档 B 显示名称（可选）</label>
+      <input type="text" id="labelB" placeholder="例如：终稿报告">
+    </div>
+  </div>
+
+  <!-- 提交按钮 -->
+  <div class="btn-row">
+    <button class="btn-compare" id="btnGo" disabled onclick="doCompare()">
+      ⚡ 开始对比
+    </button>
+  </div>
+
+  <div class="footer">
+    <p>支持任意符合 GB/T 22239-2019 格式的密评报告 · 对比结果即时生成</p>
+    <p style="margin-top:8px"><span>v1.0</span> · 本地处理，数据不上传</p>
+  </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">正在解析文档并对比中...</div>
+  <div style="color:#667788;font-size:13px">首次对比可能需要5~15秒</div>
+</div>
+
+<!-- 错误提示 -->
+<div class="error-toast" id="errToast"></div>
+
+<script>
+let files = { A: null, B: null };
+
+function onFileSelect(input, side) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  // 验证
+  if (!file.name.toLowerCase().endsWith('.docx')) {
+    showToast('仅支持 .docx 格式文件');
+    return;
+  }
+  
+  files[side] = file;
+  const card = document.getElementById('card' + side);
+  const nameEl = document.getElementById('name' + side);
+  const labelInput = document.getElementById('label' + side);
+  
+  card.classList.add('has-file');
+  nameEl.textContent = file.name + ' (' + (file.size/1024/1024).toFixed(1) + 'MB)';
+  
+  // 自动填入名称
+  if (!labelInput.value) {
+    labelInput.value = file.name.replace(/\.docx$/i, '').slice(0, 40);
+  }
+  
+  checkReady();
+}
+
+// 拖拽支持
+['cardA','cardB'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
+  el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const inputId = id === 'cardA' ? 'fileA' : 'fileB';
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      const input = document.getElementById(inputId);
+      input.files = dt.files;
+      onFileSelect(input, id.slice(-1));
+    }
+  });
+});
+
+function checkReady() {
+  document.getElementById('btnGo').disabled = !(files.A && files.B);
+}
+
+async function doCompare() {
+  if (!files.A || !files.B) return;
+  
+  const loading = document.getElementById('loading');
+  loading.classList.add('active');
+  
+  const fd = new FormData();
+  fd.append('file_a', files.A);
+  fd.append('file_b', files.B);
+  fd.append('name_a', document.getElementById('labelA').value.trim());
+  fd.append('name_b', document.getElementById('labelB').value.trim());
+  
+  try {
+    const resp = await fetch('/api/compare', { method: 'POST', body: fd });
+    const data = await resp.json();
+    
+    if (!data.success) {
+      throw new Error(data.error || '对比失败');
+    }
+    
+    // 跳转到结果页
+    window.location.href = data.redirect;
+  } catch (err) {
+    loading.classList.remove('active');
+    showToast(err.message || '网络错误，请重试');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('errToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
